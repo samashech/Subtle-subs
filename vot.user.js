@@ -26146,18 +26146,17 @@ var vot = (function(exports) {
         activeVideoElement = videoElement;
         localSubtitlesObj.subtitles = [];
         baseTime = videoElement.currentTime;
+        isConnected = true; // Ensure HTTP sending is enabled
         
         try {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (!mediaSource) {
-                mediaSource = audioCtx.createMediaElementSource(videoElement);
-                mediaDestination = audioCtx.createMediaStreamDestination();
-                mediaSource.connect(mediaDestination);
-                mediaSource.connect(audioCtx.destination); // Route to speakers
+            const captureStream = videoElement.captureStream || videoElement.mozCaptureStream;
+            if (typeof captureStream !== "function") {
+                console.error("[Local Whisper] captureStream not supported!");
+                return;
             }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-
-            let stream = mediaDestination.stream;
+            
+            let stream = captureStream.call(videoElement);
+            
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
             mediaRecorder.ondataavailable = (event) => {
                 if (event.data.size > 0 && isConnected) {
